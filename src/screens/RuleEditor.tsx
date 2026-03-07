@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, NativeModules, FlatList, Modal, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, NativeModules, FlatList, Modal, Platform, Image, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { GlassCard } from '../components/GlassCard';
@@ -9,15 +9,14 @@ const { NotificationModule } = NativeModules;
 
 export const RuleEditor = () => {
   const navigation = useNavigation<any>();
-  const [packageName, setPackageName] = useState('');
-  const [appName, setAppName] = useState('');
+  const [selectedApps, setSelectedApps] = useState<any[]>([]);
   const [days, setDays] = useState('3');
   const [apps, setApps] = useState<any[]>([]);
   const [filteredApps, setFilteredApps] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState('');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (NotificationModule && NotificationModule.getInstalledApps) {
       NotificationModule.getInstalledApps().then((appList: any[]) => {
         const sorted = appList.sort((a, b) => a.label.localeCompare(b.label));
@@ -36,16 +35,22 @@ export const RuleEditor = () => {
     setFilteredApps(filtered);
   };
 
-  const selectApp = (app: any) => {
-    setPackageName(app.packageName);
-    setAppName(app.label);
-    setModalVisible(false);
+  const toggleApp = (app: any) => {
+    setSelectedApps(prev => {
+      const exists = prev.find(a => a.packageName === app.packageName);
+      if (exists) {
+        return prev.filter(a => a.packageName !== app.packageName);
+      } else {
+        return [...prev, app];
+      }
+    });
   };
 
   const onSave = () => {
-    if (packageName && days) {
-      if (NotificationModule && NotificationModule.saveRule) {
-        NotificationModule.saveRule(packageName, parseInt(days, 10));
+    if (selectedApps.length > 0 && days) {
+      if (NotificationModule && NotificationModule.saveRules) {
+        const packageNames = selectedApps.map(a => a.packageName);
+        NotificationModule.saveRules(packageNames, parseInt(days, 10));
       }
       navigation.goBack();
     }
@@ -53,45 +58,68 @@ export const RuleEditor = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>New Rule</Text>
-      
-      <GlassCard style={styles.card}>
-        <Text style={styles.label}>Select App</Text>
-        <TouchableOpacity 
-          style={styles.pickerTrigger} 
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={[styles.pickerValue, !appName && { color: colors.textSecondary }]}>
-            {appName || "Choose from installed apps..."}
-          </Text>
-          <Icon name="chevron-down" size={24} color={colors.primary} />
-        </TouchableOpacity>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.header}>New Rule</Text>
+        
+        <GlassCard style={styles.card}>
+          <Text style={styles.label}>Selected Apps</Text>
+          <TouchableOpacity 
+            style={styles.pickerTrigger} 
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={[styles.pickerValue, selectedApps.length === 0 && { color: colors.textSecondary }]}>
+              {selectedApps.length > 0 
+                ? `${selectedApps.length} app${selectedApps.length > 1 ? 's' : ''} selected` 
+                : "Choose from installed apps..."}
+            </Text>
+            <Icon name="plus-circle-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
 
-        {packageName ? (
-          <Text style={styles.packageSubtext}>{packageName}</Text>
-        ) : null}
+          <View style={styles.selectedContainer}>
+            {selectedApps.map(app => (
+              <View key={app.packageName} style={styles.selectedPill}>
+                {app.icon ? (
+                  <Image 
+                    source={{ uri: `data:image/png;base64,${app.icon}` }} 
+                    style={styles.pillIcon} 
+                  />
+                ) : (
+                  <View style={styles.pillPlaceholder}><Text style={styles.pillInitial}>{app.label[0]}</Text></View>
+                )}
+                <Text style={styles.pillText} numberOfLines={1}>{app.label}</Text>
+                <TouchableOpacity onPress={() => toggleApp(app)}>
+                  <Icon name="close" size={16} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
 
-        <Text style={[styles.label, { marginTop: 24 }]}>Inactivity Threshold</Text>
-        <View style={styles.daysInputRow}>
-          <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0 }]}
-            placeholder="e.g. 3"
-            placeholderTextColor={colors.textSecondary}
-            value={days}
-            onChangeText={setDays}
-            keyboardType="numeric"
-          />
-          <Text style={styles.daysLabel}>Days</Text>
-        </View>
+          <Text style={[styles.label, { marginTop: 24 }]}>Inactivity Threshold</Text>
+          <View style={styles.daysInputRow}>
+            <TextInput
+              style={[styles.input, { flex: 1, marginBottom: 0 }]}
+              placeholder="e.g. 3"
+              placeholderTextColor={colors.textSecondary}
+              value={days}
+              onChangeText={setDays}
+              keyboardType="numeric"
+            />
+            <Text style={styles.daysLabel}>Days</Text>
+          </View>
 
-        <TouchableOpacity 
-          style={[styles.saveButton, !packageName && styles.saveButtonDisabled]} 
-          onPress={onSave}
-          disabled={!packageName}
-        >
-          <Text style={styles.saveText}>Save Rule</Text>
-        </TouchableOpacity>
-      </GlassCard>
+          <TouchableOpacity 
+            style={[styles.saveButton, selectedApps.length === 0 && styles.saveButtonDisabled]} 
+            onPress={onSave}
+            disabled={selectedApps.length === 0}
+          >
+            <Text style={styles.saveText}>Save Rules</Text>
+          </TouchableOpacity>
+        </GlassCard>
+      </ScrollView>
 
       <Modal
         visible={modalVisible}
@@ -102,9 +130,9 @@ export const RuleEditor = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select App</Text>
+              <Text style={styles.modalTitle}>Select Apps</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Icon name="close" size={28} color={colors.text} />
+                <Text style={styles.doneText}>Done</Text>
               </TouchableOpacity>
             </View>
 
@@ -122,20 +150,37 @@ export const RuleEditor = () => {
             <FlatList
               data={filteredApps}
               keyExtractor={(item) => item.packageName}
-              renderItem={({ item }) => (
-                <TouchableOpacity 
-                  style={styles.appItem}
-                  onPress={() => selectApp(item)}
-                >
-                  <View style={styles.appIconPlaceholder}>
-                    <Text style={styles.appInitial}>{item.label[0].toUpperCase()}</Text>
-                  </View>
-                  <View style={styles.appInfo}>
-                    <Text style={styles.appLabel}>{item.label}</Text>
-                    <Text style={styles.appPackage}>{item.packageName}</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
+              renderItem={({ item }) => {
+                const isSelected = selectedApps.find(a => a.packageName === item.packageName);
+                return (
+                  <TouchableOpacity 
+                    style={styles.appItem}
+                    onPress={() => toggleApp(item)}
+                  >
+                    <View style={styles.appIconContainer}>
+                      {item.icon ? (
+                        <Image 
+                          source={{ uri: `data:image/png;base64,${item.icon}` }} 
+                          style={styles.appIcon} 
+                        />
+                      ) : (
+                        <View style={styles.appIconPlaceholder}>
+                          <Text style={styles.appInitial}>{item.label[0].toUpperCase()}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.appInfo}>
+                      <Text style={styles.appLabel}>{item.label}</Text>
+                      <Text style={styles.appPackage} numberOfLines={1}>{item.packageName}</Text>
+                    </View>
+                    <Icon 
+                      name={isSelected ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"} 
+                      size={24} 
+                      color={isSelected ? colors.primary : colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                );
+              }}
               initialNumToRender={15}
               windowSize={10}
             />
@@ -150,7 +195,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 24,
+    paddingBottom: 60,
   },
   header: {
     fontSize: 34,
@@ -180,18 +231,55 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
+  pillIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  pillPlaceholder: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  pillInitial: {
+    fontSize: 10,
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  selectedContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+  },
+  selectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  pillText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '600',
+    marginRight: 6,
+    maxWidth: 100,
+  },
   pickerValue: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     flex: 1,
-  },
-  packageSubtext: {
-    fontSize: 12,
-    color: colors.primary,
-    marginTop: 8,
-    marginLeft: 4,
-    opacity: 0.8,
   },
   daysInputRow: {
     flexDirection: 'row',
@@ -205,7 +293,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 16,
     color: colors.text,
     fontSize: 16,
@@ -215,35 +303,36 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: colors.primary,
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: 'center',
     marginTop: 32,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   saveButtonDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     shadowOpacity: 0,
     elevation: 0,
   },
   saveText: {
     color: '#FFF',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: colors.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    height: '85%',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    height: '90%',
     padding: 24,
     borderTopWidth: 1,
     borderLeftWidth: 1,
@@ -255,21 +344,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+    paddingHorizontal: 4,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: colors.text,
+  },
+  doneText: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: '700',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   searchInput: {
     flex: 1,
@@ -281,22 +376,30 @@ const styles = StyleSheet.create({
   appItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(255,255,255,0.03)',
+  },
+  appIconContainer: {
+    marginRight: 16,
+  },
+  appIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
   },
   appIconPlaceholder: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
   appInitial: {
     color: colors.primary,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
   },
   appInfo: {
@@ -304,12 +407,13 @@ const styles = StyleSheet.create({
   },
   appLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 2,
   },
   appPackage: {
     fontSize: 12,
     color: colors.textSecondary,
+    opacity: 0.7,
   },
 });

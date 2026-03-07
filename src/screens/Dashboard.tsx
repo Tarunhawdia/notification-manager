@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, NativeModules, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, FlatList, Image } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { GlassCard } from '../components/GlassCard';
 import { colors } from '../theme/colors';
@@ -9,19 +10,31 @@ const { NotificationModule } = NativeModules;
 export const Dashboard = () => {
   const navigation = useNavigation<any>();
   const [rules, setRules] = useState<any>({});
+  const [apps, setApps] = useState<any[]>([]);
   
   useEffect(() => {
-    loadRules();
+    loadData();
     const unsubscribe = navigation.addListener('focus', () => {
-      loadRules();
+      loadData();
     });
     return unsubscribe;
   }, [navigation]);
 
-  const loadRules = async () => {
-    if (NotificationModule && NotificationModule.getRules) {
-      const data = await NotificationModule.getRules();
-      setRules(data);
+  const loadData = async () => {
+    if (NotificationModule) {
+      const [rulesData, appsData] = await Promise.all([
+        NotificationModule.getRules(),
+        NotificationModule.getInstalledApps()
+      ]);
+      setRules(rulesData);
+      setApps(appsData);
+    }
+  };
+
+  const removeRule = (pkg: string) => {
+    if (NotificationModule && NotificationModule.removeRule) {
+      NotificationModule.removeRule(pkg);
+      loadData();
     }
   };
 
@@ -44,13 +57,35 @@ export const Dashboard = () => {
         <FlatList
           data={Object.keys(rules)}
           keyExtractor={(item) => item}
-          renderItem={({ item }) => (
-            <GlassCard style={styles.ruleCard}>
-              <Text style={styles.ruleApp}>{item}</Text>
-              <Text style={styles.ruleDays}>Hide if inactive for {rules[item]} days</Text>
-            </GlassCard>
-          )}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={({ item }) => {
+            const appInfo = apps.find(a => a.packageName === item);
+            return (
+              <GlassCard style={styles.ruleCard}>
+                <View style={styles.ruleInfo}>
+                  <View style={styles.iconContainer}>
+                    {appInfo?.icon ? (
+                      <Image 
+                        source={{ uri: `data:image/png;base64,${appInfo.icon}` }} 
+                        style={styles.appIcon} 
+                      />
+                    ) : (
+                      <View style={styles.placeholderIcon}>
+                        <Text style={styles.placeholderText}>{appInfo?.label?.[0] || '?'}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.textContainer}>
+                    <Text style={styles.ruleApp}>{appInfo?.label || item}</Text>
+                    <Text style={styles.ruleDays}>Suppresses after {rules[item]} days</Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => removeRule(item)} style={styles.deleteButton}>
+                  <Icon name="trash-can-outline" size={24} color={colors.accent} />
+                </TouchableOpacity>
+              </GlassCard>
+            );
+          }}
+          contentContainerStyle={{ paddingBottom: 120 }}
         />
       )}
 
@@ -58,7 +93,7 @@ export const Dashboard = () => {
         style={styles.fab}
         onPress={() => navigation.navigate('RuleEditor')}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Icon name="plus" size={32} color="#FFF" />
       </TouchableOpacity>
     </View>
   );
@@ -110,18 +145,55 @@ const styles = StyleSheet.create({
   },
   ruleCard: {
     marginBottom: 16,
-    padding: 16,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  ruleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconContainer: {
+    marginRight: 16,
+  },
+  appIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+  },
+  placeholderIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: colors.primary,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  textContainer: {
+    flex: 1,
   },
   ruleApp: {
     fontSize: 18,
     color: colors.text,
     fontWeight: '700',
+    marginBottom: 2,
   },
   ruleDays: {
     fontSize: 14,
     color: colors.accent,
-    marginTop: 4,
-    fontWeight: '500',
+    fontWeight: '600',
+    opacity: 0.9,
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   fab: {
     position: 'absolute',
@@ -134,9 +206,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
     elevation: 8,
   },
   fabIcon: {
