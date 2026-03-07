@@ -1,97 +1,97 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+<div align="center">
+  <img src="https://raw.githubusercontent.com/tarunhawdia/notification-manager/main/assets/logo.png" alt="BuzzKill Clone Logo" width="120" />
+  
+  # BuzzKill Clone - Smart Notification Manager
 
-# Getting Started
+  <p>
+    <strong>A modern, privacy-focused Android notification manager built with React Native.</strong>
+  </p>
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+  <p>
+    <a href="#features">Features</a> •
+    <a href="#how-it-works">How It Works</a> •
+    <a href="#screenshots">Screenshots</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#contributing">Contributing</a>
+  </p>
+</div>
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 📱 About
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+This is an open-source clone of the popular Android app "BuzzKill", designed to give you ultimate control over your notifications. It focuses on a specific, powerful use case: **automatically suppressing notifications from apps you haven't used in a while.**
 
-```sh
-# Using npm
-npm start
+Tired of getting marketing spam or unhelpful alerts from apps you only open once a month? This app automatically intercepts and dismisses those notifications, keeping your status bar clean and your focus intact.
 
-# OR using Yarn
-yarn start
-```
+*Currently focused on Android due to strict iOS background processing limitations.*
 
-## Step 2: Build and run your app
+## ✨ Features
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+- 🤫 **Smart Suppression**: Define custom rules to automatically hide notifications from specific apps if you haven't opened them in `X` days.
+- 🎨 **Premium Glassmorphism UI**: A gorgeous, modern dark theme with slick glassmorphic cards and smooth interactions.
+- 🔋 **Battery Efficient**: Uses native Android `UsageStatsManager` to check inactivity efficiently without constant background polling.
+- 🔒 **Privacy First**: All rules and usage data stay strictly on your device. No cloud syncing, no external servers.
+- 🚀 **React Native + Native Modules**: Built with React Native for the UI, utilizing custom Kotlin native bridges for core Android system functionalities (`NotificationListenerService`).
 
-### Android
+## ⚙️ How It Works
 
-```sh
-# Using npm
-npm run android
+1. **Grant Permissions**: The app requires two key Android permissions:
+   - *Notification Access*: To intercept and read incoming notifications.
+   - *Usage Access*: To check when you last opened the app sending the notification.
+2. **Set a Rule**: Go to the Rule Editor and enter an app's package name (e.g., `com.whatsapp`) and set an inactivity threshold (e.g., `3` days).
+3. **Enjoy the Silence**: When a notification arrives, the app's native background service checks if the rule matches. If you haven't opened the app in the last 3 days, the notification is instantly dismissed before it even buzzes your phone.
 
-# OR using Yarn
-yarn android
-```
+## 🛠️ Tech Stack
 
-### iOS
+- **Frontend**: React Native, React Navigation
+- **Native (Android)**: Kotlin, Java
+- **Core APIs**:
+  - `NotificationListenerService`
+  - `UsageStatsManager`
+  - `SharedPreferences`
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## 🚀 Installation
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+### Prerequisites
+- Node.js (v18+)
+- Java JDK 17 (Required for modern React Native Android builds)
+- Android Studio / Android SDK
 
-```sh
-bundle install
-```
+### Steps
 
-Then, and every time you update your native dependencies, run:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/buzzkill-clone.git
+   cd buzzkill-clone
+   ```
 
-```sh
-bundle exec pod install
-```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+3. Run on Android:
+   ```bash
+   npx react-native run-android
+   ```
+   *Note: Notification listeners and usage stats require testing on a physical Android device or a fully configured emulator with Google Play Services.*
 
-```sh
-# Using npm
-npm run ios
+## 🤝 Contributing
 
-# OR using Yarn
-yarn ios
-```
+Contributions are completely welcome! This was built for personal use but designed to be open-source.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+**Areas needing help:**
+- Adding more rule types (e.g., regex matching on notification text, time-of-day filtering).
+- UI improvements and animations (Lottie).
+- App picker UI (currently requesting manual package name entry).
 
-## Step 3: Modify your app
+## 📄 License
 
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Distributed under the MIT License. See `LICENSE` for more information.
