@@ -255,7 +255,11 @@ export const RuleEditor = () => {
               renderItem={({ item }) => {
                 const isSelected = !!selectedApps.find(a => a.packageName === item.packageName);
                 return (
-                  <TouchableOpacity style={styles.appItem} onPress={() => toggleApp(item)} activeOpacity={0.7}>
+                  <TouchableOpacity
+                    style={[styles.appItem, isSelected && styles.appItemSelected]}
+                    onPress={() => toggleApp(item)}
+                    activeOpacity={0.7}
+                  >
                     {item.icon ? (
                       <Image source={{ uri: `data:image/png;base64,${item.icon}` }} style={styles.appItemIcon} />
                     ) : (
@@ -268,8 +272,8 @@ export const RuleEditor = () => {
                       <Text style={styles.appItemPkg} numberOfLines={1}>{item.packageName}</Text>
                     </View>
                     <Icon
-                      name={isSelected ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
-                      size={22}
+                      name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                      size={24}
                       color={isSelected ? colors.primary : colors.textMuted}
                     />
                   </TouchableOpacity>
@@ -520,8 +524,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.04)',
+  },
+  appItemSelected: {
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderBottomColor: 'transparent',
   },
   appItemIcon: {
     width: 40,
