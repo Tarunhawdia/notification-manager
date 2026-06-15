@@ -43,26 +43,55 @@ class NotificationModule(reactContext: ReactApplicationContext) : ReactContextBa
     }
 
     @ReactMethod
-    fun saveRule(packageName: String, days: Int) {
-        val prefs = reactApplicationContext.getSharedPreferences("BuzzKillRules", Context.MODE_PRIVATE)
-        prefs.edit().putInt(packageName, days).apply()
+    fun saveRule(packageName: String, days: Int, enabled: Boolean, quietStart: Int, quietEnd: Int) {
+        val prefs = RuleStore.rulesPrefs(reactApplicationContext)
+        RuleStore.writeRule(prefs, packageName, Rule(days, enabled, quietStart, quietEnd))
+    }
+
+    @ReactMethod
+    fun setRuleEnabled(packageName: String, enabled: Boolean) {
+        val prefs = RuleStore.rulesPrefs(reactApplicationContext)
+        val existing = RuleStore.parseRule(prefs, packageName) ?: return
+        RuleStore.writeRule(prefs, packageName, existing.copy(enabled = enabled))
     }
 
     @ReactMethod
     fun removeRule(packageName: String) {
-        val prefs = reactApplicationContext.getSharedPreferences("BuzzKillRules", Context.MODE_PRIVATE)
+        val prefs = RuleStore.rulesPrefs(reactApplicationContext)
         prefs.edit().remove(packageName).apply()
     }
 
     @ReactMethod
     fun getRules(promise: Promise) {
-        val prefs = reactApplicationContext.getSharedPreferences("BuzzKillRules", Context.MODE_PRIVATE)
-        val all = prefs.all
-        val map = com.facebook.react.bridge.Arguments.createMap()
-        for ((key, value) in all) {
-            map.putInt(key, value as Int)
+        val prefs = RuleStore.rulesPrefs(reactApplicationContext)
+        val map = Arguments.createMap()
+        for (key in prefs.all.keys) {
+            val rule = RuleStore.parseRule(prefs, key) ?: continue
+            val ruleMap = Arguments.createMap()
+            ruleMap.putInt("days", rule.days)
+            ruleMap.putBoolean("enabled", rule.enabled)
+            ruleMap.putInt("quietStart", rule.quietStart)
+            ruleMap.putInt("quietEnd", rule.quietEnd)
+            map.putMap(key, ruleMap)
         }
         promise.resolve(map)
+    }
+
+    @ReactMethod
+    fun getStats(promise: Promise) {
+        val result = Arguments.createMap()
+        result.putInt("total", RuleStore.totalSuppressed(reactApplicationContext))
+        val perApp = Arguments.createMap()
+        for ((pkg, count) in RuleStore.perAppCounts(reactApplicationContext)) {
+            perApp.putInt(pkg, count)
+        }
+        result.putMap("perApp", perApp)
+        promise.resolve(result)
+    }
+
+    @ReactMethod
+    fun resetStats() {
+        RuleStore.resetStats(reactApplicationContext)
     }
 
     @ReactMethod
@@ -95,14 +124,12 @@ class NotificationModule(reactContext: ReactApplicationContext) : ReactContextBa
     }
 
     @ReactMethod
-    fun saveRules(packageNames: ReadableArray, days: Int) {
-        val prefs = reactApplicationContext.getSharedPreferences("BuzzKillRules", Context.MODE_PRIVATE)
-        val editor = prefs.edit()
+    fun saveRules(packageNames: ReadableArray, days: Int, enabled: Boolean, quietStart: Int, quietEnd: Int) {
+        val prefs = RuleStore.rulesPrefs(reactApplicationContext)
         for (i in 0 until packageNames.size()) {
-            val pkg = packageNames.getString(i)
-            editor.putInt(pkg, days)
+            val pkg = packageNames.getString(i) ?: continue
+            RuleStore.writeRule(prefs, pkg, Rule(days, enabled, quietStart, quietEnd))
         }
-        editor.apply()
     }
 
     private fun drawableToBase64(drawable: Drawable): String {

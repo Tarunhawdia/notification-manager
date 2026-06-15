@@ -29,7 +29,11 @@ Tired of getting marketing spam or unhelpful alerts from apps you only open once
 ## ✨ Features
 
 - 🤫 **Smart Suppression**: Define custom rules to automatically hide notifications from specific apps if you haven't opened them in `X` days.
-- 🎨 **Premium Glassmorphism UI**: A gorgeous, modern dark theme with slick glassmorphic cards and smooth interactions.
+- ✏️ **Edit & Toggle Rules**: Tap any rule to change its threshold or schedule, or flip a switch to pause it without deleting.
+- ⏰ **Quiet-Hours Scheduling**: Optionally restrict suppression to a specific time window (e.g. only silence between 22:00–07:00).
+- 📊 **Suppression Stats**: See how many notifications have been silenced overall and per app.
+- 🔎 **Search & Sort**: Quickly filter your rules and sort by name, threshold, or number silenced.
+- 🎨 **Compact Glassmorphism UI**: A refined, dense dark theme with glassmorphic cards and smooth interactions.
 - 🔋 **Battery Efficient**: Uses native Android `UsageStatsManager` to check inactivity efficiently without constant background polling.
 - 🔒 **Privacy First**: All rules and usage data stay strictly on your device. No cloud syncing, no external servers.
 - 🚀 **React Native + Native Modules**: Built with React Native for the UI, utilizing custom Kotlin native bridges for core Android system functionalities (`NotificationListenerService`).
@@ -88,9 +92,9 @@ Contributions are completely welcome! This was built for personal use but design
 5. Open a Pull Request
 
 **Areas needing help:**
-- Adding more rule types (e.g., regex matching on notification text, time-of-day filtering).
-- UI improvements and animations (Lottie).
-- App picker UI (currently requesting manual package name entry).
+- Adding more rule types (e.g., regex matching on notification text).
+- UI animations (Lottie / reanimated).
+- Per-app custom thresholds within a single multi-app rule.
 
 ## 📄 License
 

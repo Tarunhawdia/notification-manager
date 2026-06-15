@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, NativeModules, AppState } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { GlassCard } from '../components/GlassCard';
 import { colors } from '../theme/colors';
@@ -13,22 +14,18 @@ export const Permissions = () => {
 
   useEffect(() => {
     checkPermissions();
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        checkPermissions();
-      }
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') checkPermissions();
     });
     return () => sub.remove();
   }, []);
 
   const checkPermissions = async () => {
-    if (NotificationModule && NotificationModule.checkPermission) {
-      const notif = await NotificationModule.checkPermission();
-      setHasNotifAccess(notif);
+    if (NotificationModule?.checkPermission) {
+      setHasNotifAccess(await NotificationModule.checkPermission());
     }
-    if (UsageStatsModule && UsageStatsModule.checkPermission) {
-      const usage = await UsageStatsModule.checkPermission();
-      setHasUsageAccess(usage);
+    if (UsageStatsModule?.checkPermission) {
+      setHasUsageAccess(await UsageStatsModule.checkPermission());
     }
   };
 
@@ -38,42 +35,70 @@ export const Permissions = () => {
     }
   }, [hasNotifAccess, hasUsageAccess]);
 
-  const requestNotif = () => NotificationModule?.requestPermission();
-  const requestUsage = () => UsageStatsModule?.requestPermission();
-
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Setup Required</Text>
+      <View style={styles.logoWrap}>
+        <Icon name="bell-cancel-outline" size={34} color={colors.primary} />
+      </View>
+      <Text style={styles.header}>Welcome to BuzzKill</Text>
       <Text style={styles.subtitle}>
-        We need a few permissions to seamlessly manage your notifications.
+        Grant two permissions so we can quietly handle notifications from apps you've stopped using.
       </Text>
 
-      <GlassCard style={styles.card}>
-        <Text style={styles.title}>Notification Access</Text>
-        <Text style={styles.desc}>Allows the app to intercept and suppress notifications for inactive apps.</Text>
-        <TouchableOpacity 
-          style={[styles.btn, hasNotifAccess && styles.btnSuccess]} 
-          onPress={requestNotif}
-          disabled={hasNotifAccess}
-        >
-          <Text style={styles.btnText}>{hasNotifAccess ? 'Granted ✓' : 'Grant Access'}</Text>
-        </TouchableOpacity>
-      </GlassCard>
+      <PermissionCard
+        icon="bell-ring-outline"
+        title="Notification Access"
+        desc="Lets the app intercept and suppress notifications for inactive apps."
+        granted={hasNotifAccess}
+        onPress={() => NotificationModule?.requestPermission()}
+      />
+      <PermissionCard
+        icon="chart-timeline-variant"
+        title="Usage Access"
+        desc="Lets the app check how long it's been since you opened an app."
+        granted={hasUsageAccess}
+        onPress={() => UsageStatsModule?.requestPermission()}
+      />
 
-      <GlassCard style={styles.card}>
-        <Text style={styles.title}>Usage Access</Text>
-        <Text style={styles.desc}>Allows the app to check how many days you've been inactive on an app.</Text>
-        <TouchableOpacity 
-          style={[styles.btn, hasUsageAccess && styles.btnSuccess]} 
-          onPress={requestUsage}
-          disabled={hasUsageAccess}
-        >
-          <Text style={styles.btnText}>{hasUsageAccess ? 'Granted ✓' : 'Grant Access'}</Text>
-        </TouchableOpacity>
-      </GlassCard>
+      <Text style={styles.footnote}>
+        <Icon name="lock-outline" size={12} color={colors.textMuted} /> Everything stays on your device.
+      </Text>
     </View>
   );
 };
+
+const PermissionCard = ({
+  icon,
+  title,
+  desc,
+  granted,
+  onPress,
+}: {
+  icon: string;
+  title: string;
+  desc: string;
+  granted: boolean;
+  onPress: () => void;
+}) => (
+  <GlassCard style={styles.card}>
+    <View style={styles.cardHead}>
+      <View style={styles.cardIcon}>
+        <Icon name={icon} size={22} color={colors.primary} />
+      </View>
+      <Text style={styles.title}>{title}</Text>
+    </View>
+    <Text style={styles.desc}>{desc}</Text>
+    <TouchableOpacity
+      style={[styles.btn, granted && styles.btnSuccess]}
+      onPress={onPress}
+      disabled={granted}
+      activeOpacity={0.9}
+    >
+      <Text style={styles.btnText}>{granted ? 'Granted' : 'Grant Access'}</Text>
+      <Icon name={granted ? 'check-circle' : 'arrow-right'} size={16} color="#FFF" />
+    </TouchableOpacity>
+  </GlassCard>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -82,47 +107,79 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
   },
+  logoWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
   header: {
-    fontSize: 40,
+    fontSize: 28,
     fontWeight: '900',
     color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 15,
     color: colors.textSecondary,
-    marginBottom: 40,
-    lineHeight: 28,
+    marginBottom: 28,
+    lineHeight: 22,
   },
   card: {
-    marginBottom: 24,
+    marginBottom: 14,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
+  cardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginBottom: 8,
   },
-  desc: {
+  cardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
     fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  desc: {
+    fontSize: 13,
     color: colors.textSecondary,
-    lineHeight: 24,
-    marginBottom: 20,
+    lineHeight: 19,
+    marginBottom: 14,
   },
   btn: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   btnSuccess: {
     backgroundColor: colors.success,
   },
   btnText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.3,
+  },
+  footnote: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: 18,
   },
 });

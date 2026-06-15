@@ -28,17 +28,24 @@ class NotificationService : NotificationListenerService() {
         super.onNotificationPosted(sbn)
         sbn?.let {
             val packageName = it.packageName
-            val prefs = getSharedPreferences("BuzzKillRules", Context.MODE_PRIVATE)
-            if (prefs.contains(packageName)) {
-                val thresholdDays = prefs.getInt(packageName, -1)
-                if (thresholdDays > 0) {
-                    val inactiveDays = getInactiveDays(packageName)
-                    Log.d(TAG, "Notification from $packageName. Inactive for $inactiveDays days. Threshold: $thresholdDays")
-                    if (inactiveDays >= thresholdDays) {
-                        Log.d(TAG, "Dismissing notification for $packageName")
-                        cancelNotification(it.key)
-                    }
-                }
+            val prefs = RuleStore.rulesPrefs(this)
+            val rule = RuleStore.parseRule(prefs, packageName) ?: return
+            if (!rule.enabled || rule.days <= 0) return
+
+            val calendar = java.util.Calendar.getInstance()
+            val nowMinutes = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+                calendar.get(java.util.Calendar.MINUTE)
+            if (!RuleStore.isWithinSchedule(rule, nowMinutes)) {
+                Log.d(TAG, "Outside schedule for $packageName, leaving notification.")
+                return
+            }
+
+            val inactiveDays = getInactiveDays(packageName)
+            Log.d(TAG, "Notification from $packageName. Inactive for $inactiveDays days. Threshold: ${rule.days}")
+            if (inactiveDays >= rule.days) {
+                Log.d(TAG, "Dismissing notification for $packageName")
+                cancelNotification(it.key)
+                RuleStore.incrementSuppressed(this, packageName)
             }
         }
     }
